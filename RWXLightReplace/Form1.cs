@@ -1,15 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
 using System.IO.Compression;
-using System.Collections;
+
 
 namespace RWXLightReplace
 {
@@ -94,7 +87,7 @@ namespace RWXLightReplace
                 foreach (string x in files1)
                 {
                     ext = Path.GetExtension(x);
-                    if (ext == ".zip")
+                    if (ext.ToLower() == ".zip")
                     {
                         try
                         {
@@ -129,25 +122,17 @@ namespace RWXLightReplace
             string ext = Path.GetExtension(file);
 
             // if rwx, process
-            if (ext == ".rwx")
+            if (ext.ToLower() == ".rwx")
             {
                 Process(file, dir);
                 return;
             }
 
-
-           
-            
-
-            // if we processed the file, re-zip it (first, for each file deleteing existing zip that has same filename
-
-
-
         }
 
         private void Process(string file, string dir)
         {
-            Console.WriteLine(file);
+            //Console.WriteLine(file);
             string line, replacewith, linebuild, linepad;
             int found, index;
 
@@ -166,18 +151,26 @@ namespace RWXLightReplace
                 replacewith = "";
                 index = 0;
                 linepad = "";
-                if (line.Contains("Surface"))
+                line = line.ToLower();
+
+                if (line.Contains("surface"))
                 {
                     // find the position of the tag in the string
                     found = 1;
-                    index = line.IndexOf("Surface");
-                    replacewith = "Surface";
+                    index = line.IndexOf("surface");
+                    replacewith = "surface";
                 }
-                else if (line.Contains("surface"))
+                else if (line.Contains("ambient"))
                 {
                     found = 1;
-                    index = line.IndexOf("surface");
-                    replacewith = "Surface";
+                    index = line.IndexOf("ambient");
+                    replacewith = "ambient";
+                }
+                else if (line.Contains("diffuse"))
+                {
+                    found = 1;
+                    index = line.IndexOf("diffuse");
+                    replacewith = "diffuse";
                 }
 
                 // If the line contains one of the tags, build the new tag and write it to outfile - else write the old line to outfile
@@ -187,11 +180,11 @@ namespace RWXLightReplace
                     linebuild = linepad.PadRight(index);
                     linebuild = linebuild + replacewith;
 
-                    if (replacewith == "Surface")
+                    if (replacewith == "surface")
                     {
                         linebuild = linebuild + " " + Globals.Ambient + " " + Globals.Diffuse + " 0";
                     }
-                    else if (replacewith == "Ambient")
+                    else if (replacewith == "ambient")
                     {
                         linebuild = linebuild + " " + Globals.Ambient;
                     }
@@ -208,37 +201,31 @@ namespace RWXLightReplace
                     outfile.WriteLine(line);
                 }
 
-
-                
-
-
             }
             sfile.Close();
             outfile.Close();
 
 
             // After both files are closed, delete the input file and rename the output file to input file
+            File.Delete(file);
+            File.Move(dir + "\\output.txt", file.ToLower());
 
+            
+            // Now zip it all up if check for zipafter is checked
+            if (Globals.ZipAfter)
+            {
+                string zipfile = Path.ChangeExtension(file.ToLower(), ".zip");
+                string fileentry = Path.GetFileName(file.ToLower());
 
-
-
-            // tag could look like     Surface 1 1 0
-            // or ambient 1   or diffuse 1
-
-            // 
-
-
-
-
+                using (ZipArchive newFile = ZipFile.Open(zipfile, ZipArchiveMode.Create))
+                {
+                    //Console.WriteLine(file + " : " + fileentry);
+                    newFile.CreateEntryFromFile(file, fileentry);
+                }
+                File.Delete(file);
+            }
+        
         }
-
-
-        // Documentations
-
-        // StringContains() help & example
-        // https://msdn.microsoft.com/en-us/library/dy85x1sa(v=vs.110).aspx
-
-        //
 
     }
 }
